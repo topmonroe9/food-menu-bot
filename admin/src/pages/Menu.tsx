@@ -1,10 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import { api } from "../api";
 import { confirm, haptic } from "../tg";
-import type { Category, Dish, Variant } from "../types";
+import { BUTTON_STYLES, type ButtonStyle, type Category, type Dish, type Variant } from "../types";
 import { money } from "../format";
 import { shrinkImage } from "../image";
-import { Empty, Field, PromptSheet, Sheet, Toggle } from "../ui";
+import { Chips, Empty, Field, Sheet, Toggle } from "../ui";
 
 interface MenuData {
   categories: Category[];
@@ -38,9 +38,9 @@ export function MenuPage() {
 
   if (!data) return <Empty>Загрузка…</Empty>;
 
-  const saveCategoryName = async (title: string) => {
-    if (naming === "new") await api.post("/categories", { title });
-    else if (naming) await api.patch(`/categories/${naming.id}`, { title });
+  const saveCategory = async (title: string, button_style: ButtonStyle) => {
+    if (naming === "new") await api.post("/categories", { title, button_style });
+    else if (naming) await api.patch(`/categories/${naming.id}`, { title, button_style });
     setNaming(null);
     await load();
   };
@@ -83,7 +83,9 @@ export function MenuPage() {
         return (
           <div class={c.is_visible ? "category" : "category hidden"}>
             <div class="category-head">
-              <h2 onClick={() => setNaming(c)}>{c.title} <span class="muted small">✏️</span></h2>
+              <h2 onClick={() => setNaming(c)}>
+                {c.title} <span class="muted small">{styleDot(c.button_style)}✏️</span>
+              </h2>
               <div class="tools">
                 <button class="icon" onClick={() => moveCategory(c, -1)} aria-label="Выше">↑</button>
                 <button class="icon" onClick={() => moveCategory(c, 1)} aria-label="Ниже">↓</button>
@@ -121,13 +123,7 @@ export function MenuPage() {
         + Новый раздел
       </button>
       {naming && (
-        <PromptSheet
-          title={naming === "new" ? "Новый раздел" : "Название раздела"}
-          initial={naming === "new" ? "" : naming.title}
-          placeholder="Например, «Горячее»"
-          onSubmit={saveCategoryName}
-          onClose={() => setNaming(null)}
-        />
+        <CategorySheet category={naming === "new" ? null : naming} onSubmit={saveCategory} onClose={() => setNaming(null)} />
       )}
       {editing && (
         <DishEditor
@@ -142,6 +138,34 @@ export function MenuPage() {
         />
       )}
     </section>
+  );
+}
+
+function styleDot(style: ButtonStyle): string {
+  const label = BUTTON_STYLES.find(([value]) => value === style)?.[1] ?? "";
+  return style ? `${label.split(" ")[0]} ` : "";
+}
+
+function CategorySheet(props: {
+  category: Category | null;
+  onSubmit: (title: string, style: ButtonStyle) => void;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState(props.category?.title ?? "");
+  const [style, setStyle] = useState<ButtonStyle>(props.category?.button_style ?? "");
+  return (
+    <Sheet title={props.category ? "Раздел" : "Новый раздел"} onClose={props.onClose}>
+      <Field label="Название">
+        <input autoFocus value={title} placeholder="Например, «Горячее»" onInput={(e) => setTitle(e.currentTarget.value)} />
+      </Field>
+      <div class="field">
+        <span>Цвет кнопки раздела в боте</span>
+        <Chips value={style} options={BUTTON_STYLES} onChange={setStyle} />
+      </div>
+      <button class="primary wide" disabled={!title.trim()} onClick={() => props.onSubmit(title.trim(), style)}>
+        Сохранить
+      </button>
+    </Sheet>
   );
 }
 

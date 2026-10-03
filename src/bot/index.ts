@@ -9,6 +9,7 @@ import { orders } from "./client/orders.js";
 import { adminComposer } from "./admin/index.js";
 import { broadcastComposer } from "./admin/broadcast.js";
 import { mainKeyboard } from "./ui.js";
+import { cookName } from "../db/settings.js";
 
 bot.drop((ctx) => ctx.chat?.type !== "private" && !ctx.callbackQuery);
 
@@ -20,7 +21,7 @@ bot.use(async (ctx, next) => {
 bot.use(start, broadcastComposer, adminComposer, checkout, menu, cart, orders);
 
 bot.on("message", (ctx) =>
-  ctx.reply("Пользуйтесь кнопками внизу 👇 Если есть вопрос по заказу — напишите шефу в личку.", {
+  ctx.reply(`Пользуйтесь кнопками внизу 👇 Если есть вопрос по заказу — напишите ${cookName().dative} в личку.`, {
     reply_markup: mainKeyboard(ctx.from.id),
   }),
 );

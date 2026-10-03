@@ -12,7 +12,7 @@ const clientCommands = [
 
 const adminCommands = [
   ...clientCommands,
-  { command: "admin", description: "Панель шефа" },
+  { command: "admin", description: "Панель заказов" },
   { command: "broadcast", description: "Рассылка всем клиентам" },
 ];
 

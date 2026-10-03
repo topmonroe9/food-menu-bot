@@ -137,6 +137,9 @@ const migrations: string[] = [
     finished_at TEXT
   );
   `,
+  `
+  ALTER TABLE categories ADD COLUMN button_style TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 function migrate() {

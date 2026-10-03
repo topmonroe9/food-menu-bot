@@ -1,5 +1,5 @@
 import type { ComponentChildren } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect } from "preact/hooks";
 
 export function Sheet(props: { title: string; onClose: () => void; children: ComponentChildren }) {
   useEffect(() => {
@@ -54,29 +54,5 @@ export function Field(props: { label: string; children: ComponentChildren; hint?
       {props.children}
       {props.hint && <small>{props.hint}</small>}
     </label>
-  );
-}
-
-export function PromptSheet(props: {
-  title: string;
-  initial?: string;
-  placeholder?: string;
-  onSubmit: (value: string) => void;
-  onClose: () => void;
-}) {
-  const [value, setValue] = useState(props.initial ?? "");
-  return (
-    <Sheet title={props.title} onClose={props.onClose}>
-      <input
-        autoFocus
-        value={value}
-        placeholder={props.placeholder}
-        onInput={(e) => setValue(e.currentTarget.value)}
-        onKeyDown={(e) => e.key === "Enter" && value.trim() && props.onSubmit(value.trim())}
-      />
-      <button class="primary wide" disabled={!value.trim()} onClick={() => props.onSubmit(value.trim())}>
-        Сохранить
-      </button>
-    </Sheet>
   );
 }

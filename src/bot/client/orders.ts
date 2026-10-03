@@ -6,6 +6,7 @@ import { money } from "../../lib/format.js";
 import { shortDateTime } from "../../lib/time.js";
 import { cancelByClient, clientMarkedPaid, OrderFlowError, paidButton, paymentText } from "../../services/orders.js";
 import { clientOrderText } from "../../services/orderText.js";
+import { cookName } from "../../db/settings.js";
 import { answer, BTN_ORDERS, showText } from "../ui.js";
 import { showCart } from "./cart.js";
 
@@ -57,9 +58,9 @@ orders.callbackQuery(/^c:o:(\d+)$/, async (ctx) => {
 orders.callbackQuery(/^c:paid:(\d+)$/, async (ctx) => {
   try {
     const order = await clientMarkedPaid(Number(ctx.match[1]), ctx.from.id);
-    await answer(ctx, "Спасибо! Передал шефу");
+    await answer(ctx, `Спасибо! Передал ${cookName().dative}`);
     await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => undefined);
-    await ctx.reply(`🙏 Спасибо! Шеф проверит поступление по заказу #${order.id} и подтвердит оплату.`);
+    await ctx.reply(`🙏 Спасибо! ${cookName().name} проверит поступление по заказу #${order.id} и подтвердит оплату.`);
   } catch (err) {
     if (!(err instanceof OrderFlowError)) throw err;
     await answer(ctx, err.message, true);

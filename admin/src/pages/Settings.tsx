@@ -1,9 +1,9 @@
 import { useEffect, useState } from "preact/hooks";
 import { api } from "../api";
 import { confirm, haptic, tg } from "../tg";
-import type { Admin, Broadcast, Client, Me, Settings } from "../types";
+import { BUTTON_STYLES, type Admin, type Broadcast, type Client, type Me, type Settings } from "../types";
 import { personName, shortDateTime } from "../format";
-import { Empty, Field, Sheet, Toggle } from "../ui";
+import { Chips, Empty, Field, Sheet, Toggle } from "../ui";
 
 export function SettingsPage(props: { me: Me; botUsername: string; onMeChanged: () => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -35,6 +35,15 @@ export function SettingsPage(props: { me: Me; botUsername: string; onMeChanged: 
       <Field label="Адрес самовывоза">
         <textarea rows={2} value={settings.pickup_address} placeholder="ул. Ленина 1, подъезд 2. Позвоните, когда подъедете" onInput={(e) => set({ pickup_address: e.currentTarget.value })} />
       </Field>
+      <div class="row gap">
+        <Field label="Имя в сообщениях клиентам" hint={`«${settings.cook_name || "…"} подтвердит время»`}>
+          <input value={settings.cook_name} placeholder="Виктория" onInput={(e) => set({ cook_name: e.currentTarget.value, cook_name_dative: "" })} />
+        </Field>
+        <Field label="Кому (дательный падеж)" hint={`«Заказ отправлен ${settings.cook_name_dative || "…"}»`}>
+          <input value={settings.cook_name_dative} placeholder="заполнится при сохранении" onInput={(e) => set({ cook_name_dative: e.currentTarget.value })} />
+        </Field>
+      </div>
+      <p class="muted small">Склонение бот подбирает сам, когда вы меняете имя. Если после сохранения оно вышло неверным — поправьте второе поле.</p>
       <Field label="Приветствие в боте">
         <textarea rows={4} value={settings.welcome_text} onInput={(e) => set({ welcome_text: e.currentTarget.value })} />
       </Field>
@@ -45,6 +54,19 @@ export function SettingsPage(props: { me: Me; botUsername: string; onMeChanged: 
         <Field label="Утренняя сводка в, ч" hint="заказы на сегодня">
           <input type="number" min={0} max={23} value={settings.digest_hour} onInput={(e) => set({ digest_hour: e.currentTarget.value })} />
         </Field>
+      </div>
+      <h2>Цвета кнопок в боте</h2>
+      <p class="muted small">
+        Зелёным бот всегда отмечает то, что уже в корзине, красным — «убрать». Цвет кнопки раздела меняется в «Меню»: нажмите на
+        название раздела. В старых версиях Telegram кнопки останутся обычными.
+      </p>
+      <div class="field">
+        <span>Главная кнопка: «Корзина», «Оформить заказ», «Подтвердить заказ»</span>
+        <Chips value={settings.main_button_style} options={BUTTON_STYLES} onChange={(v) => set({ main_button_style: v })} />
+      </div>
+      <div class="field">
+        <span>Кнопки «➕ добавить» в карточке блюда</span>
+        <Chips value={settings.variant_button_style} options={BUTTON_STYLES} onChange={(v) => set({ variant_button_style: v })} />
       </div>
       <button class="primary wide" disabled={saved} onClick={save}>
         {saved ? "Сохранено" : "Сохранить"}

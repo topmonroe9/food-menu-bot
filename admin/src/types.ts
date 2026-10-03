@@ -48,11 +48,22 @@ export interface Client {
   total_spent: number;
 }
 
+export type ButtonStyle = "" | "primary" | "success" | "danger";
+
+// telegram has exactly these button colors, "" is the client's default
+export const BUTTON_STYLES: [ButtonStyle, string][] = [
+  ["", "⚪️ Обычная"],
+  ["primary", "🔵 Синяя"],
+  ["success", "🟢 Зелёная"],
+  ["danger", "🔴 Красная"],
+];
+
 export interface Category {
   id: number;
   title: string;
   position: number;
   is_visible: number;
+  button_style: ButtonStyle;
 }
 
 export interface Variant {
@@ -123,6 +134,7 @@ export interface Me {
 }
 
 export type Settings = Record<
-  "welcome_text" | "payment_details" | "pickup_address" | "payment_reminder_hours" | "digest_hour",
+  "welcome_text" | "payment_details" | "pickup_address" | "payment_reminder_hours" | "digest_hour" | "cook_name" | "cook_name_dative",
   string
->;
+> &
+  Record<"main_button_style" | "variant_button_style", ButtonStyle>;

@@ -15,7 +15,7 @@ import {
   saveCardFor,
   scheduleOrder,
 } from "../../services/orders.js";
-import { adminUrl, answer } from "../ui.js";
+import { adminUrl, answer, BTN_ADMIN } from "../ui.js";
 import { cancelConfirmKeyboard, dayPickerKeyboard, expandDate, orderCardKeyboard, timePickerKeyboard } from "./keyboards.js";
 
 export const adminComposer = new Composer();
@@ -31,10 +31,10 @@ async function run(ctx: Context, action: () => Promise<unknown>, done: string) {
   }
 }
 
-admin.command("admin", async (ctx) => {
+async function showPanel(ctx: Context) {
   const counts = ordersCountByStatus();
   const text = [
-    "<b>Панель шефа</b>",
+    "<b>Панель заказов</b>",
     "",
     `🆕 Новых: ${counts.new ?? 0}`,
     `🔎 Проверить оплату: ${counts.payment_check ?? 0}`,
@@ -47,7 +47,10 @@ admin.command("admin", async (ctx) => {
   if (url) kb.webApp("⚙️ Открыть админку", url).row();
   kb.text("📋 Активные заказы", "a:list").text("📣 Рассылка", "a:broadcast");
   await ctx.reply(text, { parse_mode: "HTML", reply_markup: kb });
-});
+}
+
+admin.command("admin", showPanel);
+admin.hears(BTN_ADMIN, showPanel);
 
 admin.callbackQuery("a:list", async (ctx) => {
   await answer(ctx);

@@ -36,6 +36,7 @@ import {
   scheduleOrder,
 } from "../services/orders.js";
 import { addDays, today } from "../lib/time.js";
+import { toButtonStyle } from "../lib/buttons.js";
 import { applyAdminUi } from "../bot/setup.js";
 
 type Env = { Variables: { user: WebAppUser } };
@@ -136,14 +137,18 @@ app.get("/api/clients/:id", (c) => {
 app.get("/api/menu", (c) => c.json({ categories: listCategories(), dishes: listDishes() }));
 
 app.post("/api/categories", async (c) => {
-  const { title } = await c.req.json<{ title: string }>();
+  const { title, button_style } = await c.req.json<{ title: string; button_style?: string }>();
   if (!title?.trim()) throw new BadRequest("Название пустое");
-  return c.json({ id: createCategory(title.trim()) });
+  return c.json({ id: createCategory(title.trim(), toButtonStyle(button_style)) });
 });
 
 app.patch("/api/categories/:id", async (c) => {
-  const body = await c.req.json<{ title?: string; is_visible?: boolean }>();
-  updateCategory(int(c.req.param("id")), { title: body.title?.trim() || undefined, is_visible: body.is_visible });
+  const body = await c.req.json<{ title?: string; is_visible?: boolean; button_style?: string }>();
+  updateCategory(int(c.req.param("id")), {
+    title: body.title?.trim() || undefined,
+    is_visible: body.is_visible,
+    button_style: body.button_style === undefined ? undefined : toButtonStyle(body.button_style),
+  });
   return c.json({ ok: true });
 });
 

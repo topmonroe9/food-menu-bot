@@ -2,7 +2,7 @@ import { GrammyError, InlineKeyboard } from "grammy";
 import { bot } from "../bot/instance.js";
 import { getOrder, getOrderMessages, saveOrderMessage, updateOrder, createOrder, type OrderFull, type OrderStatus } from "../db/orders.js";
 import { notifyRecipients } from "../db/admins.js";
-import { getSetting } from "../db/settings.js";
+import { cookName, getSetting } from "../db/settings.js";
 import { clearCart, getCart } from "../db/cart.js";
 import { adminOrderText } from "./orderText.js";
 import { orderCardKeyboard } from "../bot/admin/keyboards.js";
@@ -79,7 +79,7 @@ export function paymentText(order: OrderFull): string {
   const details = getSetting("payment_details").trim();
   return [
     `Сумма к оплате: <b>${money(order.total)}</b>`,
-    details ? `\nРеквизиты:\n${escapeHtml(details)}` : "\nРеквизиты шеф пришлёт в личные сообщения.",
+    details ? `\nРеквизиты:\n${escapeHtml(details)}` : `\nРеквизиты ${cookName().name} пришлёт в личные сообщения.`,
     "\nПосле перевода нажмите «Я оплатил» 👇",
   ].join("\n");
 }
@@ -116,12 +116,12 @@ export async function scheduleOrder(orderId: number, at: string) {
 
   if (isFirstConfirm) {
     const address = getSetting("pickup_address").trim();
-    const lines = [`✅ Шеф принял заказ #${orderId} и поставил его на <b>${humanDateTime(at)}</b>.`];
+    const lines = [`✅ Заказ #${orderId} принят, ждём вас <b>${humanDateTime(at)}</b>.`];
     if (address) lines.push(`📍 Самовывоз: ${escapeHtml(address)}`);
     lines.push("", paymentText(updated));
     await tellClient(updated, lines.join("\n"), paidButton(orderId));
   } else {
-    await tellClient(updated, `🕐 Шеф перенёс заказ #${orderId} на <b>${humanDateTime(at)}</b>.`);
+    await tellClient(updated, `🕐 Заказ #${orderId} перенесён на <b>${humanDateTime(at)}</b>.`);
   }
   await refreshAdminCards(orderId);
   return updated;
@@ -142,7 +142,7 @@ export async function confirmPayment(orderId: number) {
   updateOrder(orderId, { status: "paid" });
   const updated = load(orderId);
   const when = updated.scheduled_at ? ` Ждём вас ${humanDateTime(updated.scheduled_at)}.` : "";
-  await tellClient(updated, `💚 Оплата по заказу #${orderId} получена, шеф начинает готовить!${when}`);
+  await tellClient(updated, `💚 Оплата по заказу #${orderId} получена, ${cookName().name} начинает готовить!${when}`);
   await refreshAdminCards(orderId);
   return updated;
 }
@@ -154,7 +154,7 @@ export async function rejectPayment(orderId: number) {
   const updated = load(orderId);
   await tellClient(
     updated,
-    `🤔 Шеф пока не видит оплату по заказу #${orderId}. Проверьте, пожалуйста, перевод.\n\n${paymentText(updated)}`,
+    `🤔 ${cookName().name} пока не видит оплату по заказу #${orderId}. Проверьте, пожалуйста, перевод.\n\n${paymentText(updated)}`,
     paidButton(orderId),
   );
   await refreshAdminCards(orderId);
@@ -194,7 +194,7 @@ export async function cancelByAdmin(orderId: number) {
   expect(order, ["new", "awaiting_payment", "payment_check", "paid", "ready"]);
   updateOrder(orderId, { status: "cancelled" });
   const updated = load(orderId);
-  await tellClient(updated, `Заказ #${orderId} отменён шефом. Если остались вопросы — напишите шефу в личку.`);
+  await tellClient(updated, `Заказ #${orderId} отменён. Если остались вопросы — напишите ${cookName().dative} в личку.`);
   await refreshAdminCards(orderId);
   return updated;
 }

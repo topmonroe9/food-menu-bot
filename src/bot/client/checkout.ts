@@ -5,7 +5,8 @@ import { clearState, getState, setState, type CheckoutDraft } from "../../db/sta
 import { escapeHtml, money } from "../../lib/format.js";
 import { humanDateTime, nowLocal, shortDay, timeSteps } from "../../lib/time.js";
 import { OrderFlowError, submitOrder } from "../../services/orders.js";
-import { answer, showText } from "../ui.js";
+import { cookName } from "../../db/settings.js";
+import { addButton, answer, mainStyle, showText } from "../ui.js";
 import { showCart } from "./cart.js";
 
 export const checkout = new Composer();
@@ -30,7 +31,7 @@ async function askWhen(ctx: Context) {
     saveDraft(userId, { awaiting: "note" });
     await showText(
       ctx,
-      "Свободных окошек в расписании пока нет.\n\n✍️ Напишите, когда вам было бы удобно забрать заказ (например: «в субботу после 18:00») — шеф согласует время.",
+      `Свободных окошек в расписании пока нет.\n\n✍️ Напишите, когда вам было бы удобно забрать заказ (например: «в субботу после 18:00») — ${cookName().name} согласует время.`,
       new InlineKeyboard().text("« Корзина", "c:cart"),
     );
     return;
@@ -39,7 +40,7 @@ async function askWhen(ctx: Context) {
   const kb = new InlineKeyboard();
   for (const s of slots) kb.text(`${shortDay(s.date)} · ${s.start_time}–${s.end_time}`, `co:s:${s.id}`).row();
   kb.text("📅 Другая дата", "co:other").row().text("« Корзина", "c:cart");
-  await showText(ctx, "<b>Когда вам удобно забрать заказ?</b>\nВыберите окошко шефа 👇", kb);
+  await showText(ctx, "<b>Когда вам удобно забрать заказ?</b>\nВыберите удобное окошко 👇", kb);
 }
 
 async function askComment(ctx: Context, draft: CheckoutDraft) {
@@ -69,13 +70,12 @@ async function showSummary(ctx: Context, draft: CheckoutDraft) {
     `🗓 Когда: ${when}`,
   ];
   if (draft.comment) parts.push(`💬 ${escapeHtml(draft.comment)}`);
-  parts.push("", "После подтверждения заказ уйдёт шефу. Шеф подтвердит время, и я пришлю реквизиты для оплаты.");
+  parts.push("", `После подтверждения заказ уйдёт ${cookName().dative}. Когда время будет подтверждено, я пришлю реквизиты для оплаты.`);
   const text = parts.join("\n");
   await showText(
     ctx,
     text,
-    new InlineKeyboard()
-      .text("✅ Подтвердить заказ", "co:ok")
+    addButton(new InlineKeyboard(), { text: "✅ Подтвердить заказ", data: "co:ok", style: mainStyle() })
       .row()
       .text("🕐 Изменить время", "co:start")
       .text("💬 Комментарий", "co:comment")
@@ -126,7 +126,7 @@ checkout.callbackQuery("co:other", async (ctx) => {
   saveDraft(ctx.from.id, { ...draftOf(ctx.from.id), awaiting: "note" });
   await showText(
     ctx,
-    "✍️ Напишите, когда вам было бы удобно забрать заказ (например: «в пятницу после 18:00»). Шеф посмотрит и предложит время.",
+    `✍️ Напишите, когда вам было бы удобно забрать заказ (например: «в пятницу после 18:00»). ${cookName().name} посмотрит и предложит время.`,
     new InlineKeyboard().text("« Назад", "co:start"),
   );
 });
@@ -163,7 +163,7 @@ checkout.callbackQuery("co:ok", async (ctx) => {
     await answer(ctx, "Заказ отправлен!");
     await showText(
       ctx,
-      `🎉 <b>Заказ #${order.id} отправлен шефу!</b>\n\nКак только шеф подтвердит время, я пришлю реквизиты для оплаты.`,
+      `🎉 <b>Заказ #${order.id} отправлен ${cookName().dative}!</b>\n\nКак только время будет подтверждено, я пришлю реквизиты для оплаты.`,
       new InlineKeyboard().text("📦 Мои заказы", "c:orders"),
     );
   } catch (err) {

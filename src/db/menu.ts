@@ -1,10 +1,12 @@
 import { db } from "./index.js";
+import type { ButtonStyle } from "../lib/buttons.js";
 
 export interface Category {
   id: number;
   title: string;
   position: number;
   is_visible: number;
+  button_style: ButtonStyle;
 }
 
 export interface Dish {
@@ -58,13 +60,19 @@ export function getCategory(id: number): Category | undefined {
   return db.prepare("SELECT * FROM categories WHERE id = ?").get(id) as Category | undefined;
 }
 
-export function createCategory(title: string): number {
+export function createCategory(title: string, buttonStyle: ButtonStyle = ""): number {
   const max = db.prepare("SELECT COALESCE(MAX(position), 0) AS p FROM categories").get() as { p: number };
-  return Number(db.prepare("INSERT INTO categories (title, position) VALUES (?, ?)").run(title, max.p + 1).lastInsertRowid);
+  return Number(
+    db
+      .prepare("INSERT INTO categories (title, position, button_style) VALUES (?, ?, ?)")
+      .run(title, max.p + 1, buttonStyle).lastInsertRowid,
+  );
 }
 
-export function updateCategory(id: number, patch: { title?: string; is_visible?: boolean }) {
+export function updateCategory(id: number, patch: { title?: string; is_visible?: boolean; button_style?: ButtonStyle }) {
   if (patch.title !== undefined) db.prepare("UPDATE categories SET title = ? WHERE id = ?").run(patch.title, id);
+  if (patch.button_style !== undefined)
+    db.prepare("UPDATE categories SET button_style = ? WHERE id = ?").run(patch.button_style, id);
   if (patch.is_visible !== undefined)
     db.prepare("UPDATE categories SET is_visible = ? WHERE id = ?").run(patch.is_visible ? 1 : 0, id);
 }
