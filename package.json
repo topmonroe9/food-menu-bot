@@ -1,0 +1,30 @@
+{
+  "name": "food-menu-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build:admin && tsc -p tsconfig.json",
+    "build:admin": "node scripts/build-admin.mjs",
+    "dev": "node scripts/build-admin.mjs && tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p admin/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "better-sqlite3": "^12.4.0",
+    "grammy": "^1.38.0",
+    "hono": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.18.0",
+    "esbuild": "^0.25.0",
+    "preact": "^10.27.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
