@@ -253,7 +253,7 @@ button.link {
   border-top: 1px solid var(--line);
 }
 
-.variant > div {
+.variant > div:first-child {
   display: flex;
   flex-direction: column;
 }
@@ -278,6 +278,7 @@ button.add {
   background: var(--accent);
   color: var(--accent-text);
   border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .stepper button {
