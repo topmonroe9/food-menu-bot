@@ -12,7 +12,7 @@ const MAX_AGE_SECONDS = 24 * 60 * 60;
 
 const secretKey = createHmac("sha256", "WebAppData").update(config.botToken).digest();
 
-export function validateInitData(initData: string): WebAppUser | null {
+export function validateInitData(initData: string, maxAgeSeconds = MAX_AGE_SECONDS): WebAppUser | null {
   const params = new URLSearchParams(initData);
   const hash = params.get("hash");
   if (!hash) return null;
@@ -27,7 +27,7 @@ export function validateInitData(initData: string): WebAppUser | null {
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
 
   const authDate = Number(params.get("auth_date"));
-  if (!authDate || Date.now() / 1000 - authDate > MAX_AGE_SECONDS) return null;
+  if (!authDate || Date.now() / 1000 - authDate > maxAgeSeconds) return null;
 
   try {
     const user = JSON.parse(params.get("user") ?? "null") as WebAppUser | null;

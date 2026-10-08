@@ -13,6 +13,14 @@ export function adminUrl(): string | null {
   return config.webAppUrl.startsWith("https://") ? `${config.webAppUrl}/admin/` : null;
 }
 
+export function siteUrl(): string | null {
+  return config.webAppUrl ? `${config.webAppUrl}/` : null;
+}
+
+export function whatsappShareUrl(url: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(`Наше меню, заказать можно прямо на сайте 👇\n${url}`)}`;
+}
+
 export function mainKeyboard(userId: number): Keyboard {
   const kb = new Keyboard().text(BTN_MENU).text(BTN_CART).row().text(BTN_ORDERS);
   // a web_app keyboard button opens the mini app without initData, so the api can't tell who it is.

@@ -1,5 +1,6 @@
 import { db } from "./index.js";
 import { nowLocal } from "../lib/time.js";
+import { whatsappLink } from "../lib/phone.js";
 
 export interface User {
   id: number;
@@ -9,6 +10,7 @@ export interface User {
   last_activity_at: string;
   created_at: string;
   is_blocked: number;
+  phone: string | null;
 }
 
 export interface TelegramFrom {
@@ -48,8 +50,31 @@ export function displayName(user: Pick<User, "first_name" | "last_name" | "usern
   return name || (user.username ? `@${user.username}` : "Без имени");
 }
 
-export function chatLink(user: Pick<User, "id" | "username">): string {
+// people who ordered on the site have no telegram account here, they get negative ids so they never clash with telegram ones
+export function isWebUser(id: number): boolean {
+  return id < 0;
+}
+
+export function chatLink(user: Pick<User, "id" | "username" | "phone">): string {
+  if (isWebUser(user.id)) return user.phone ? whatsappLink(user.phone) : "";
   return user.username ? `https://t.me/${user.username}` : `tg://user?id=${user.id}`;
+}
+
+export function saveWebUser(name: string, phone: string): number {
+  return db.transaction(() => {
+    const now = nowLocal();
+    const existing = db.prepare("SELECT id FROM users WHERE phone = ? AND id < 0").get(phone) as { id: number } | undefined;
+    if (existing) {
+      db.prepare("UPDATE users SET first_name = ?, last_activity_at = ? WHERE id = ?").run(name, now, existing.id);
+      return existing.id;
+    }
+    const { min } = db.prepare("SELECT COALESCE(MIN(id), 0) AS min FROM users WHERE id < 0").get() as { min: number };
+    const id = min - 1;
+    db.prepare(
+      "INSERT INTO users (id, first_name, phone, last_activity_at, created_at) VALUES (?, ?, ?, ?, ?)",
+    ).run(id, name, phone, now, now);
+    return id;
+  })();
 }
 
 export interface ClientRow extends User {
@@ -68,6 +93,8 @@ const CLIENT_SORT: Record<ClientSort, string> = {
 
 export function listClients(search = "", limit = 100, sort: ClientSort = "recent"): ClientRow[] {
   const like = `%${search.trim().toLowerCase()}%`;
+  const digits = search.replace(/\D/g, "");
+  const phoneLike = digits.length >= 3 ? `%${digits.replace(/^8/, "")}%` : "";
   return db
     .prepare(
       `SELECT u.*,
@@ -78,11 +105,12 @@ export function listClients(search = "", limit = 100, sort: ClientSort = "recent
        LEFT JOIN orders o ON o.user_id = u.id
        WHERE ? = '%%'
           OR lower(u.first_name || ' ' || COALESCE(u.last_name, '') || ' ' || COALESCE(u.username, '')) LIKE ?
+          OR (? != '' AND u.phone LIKE ?)
        GROUP BY u.id
        ORDER BY ${CLIENT_SORT[sort] ?? CLIENT_SORT.recent}
        LIMIT ?`,
     )
-    .all(like, like, limit) as ClientRow[];
+    .all(like, like, phoneLike, phoneLike, limit) as ClientRow[];
 }
 
 export function setBlocked(id: number) {
@@ -90,7 +118,7 @@ export function setBlocked(id: number) {
 }
 
 export function reachableUserIds(): number[] {
-  return (db.prepare("SELECT id FROM users WHERE is_blocked = 0 ORDER BY id").all() as { id: number }[]).map((r) => r.id);
+  return (db.prepare("SELECT id FROM users WHERE is_blocked = 0 AND id > 0 ORDER BY id").all() as { id: number }[]).map((r) => r.id);
 }
 
 export interface FavoriteDish {

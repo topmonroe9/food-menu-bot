@@ -1,11 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
 import { api } from "../api";
-import { confirm, haptic, tg } from "../tg";
+import { confirm, haptic, openLink, tg } from "../tg";
 import { BUTTON_STYLES, type Admin, type Broadcast, type Client, type Me, type Settings } from "../types";
 import { personName, shortDateTime } from "../format";
 import { Chips, Empty, Field, Sheet, Toggle } from "../ui";
 
-export function SettingsPage(props: { me: Me; botUsername: string; onMeChanged: () => void }) {
+export function SettingsPage(props: { me: Me; botUsername: string; siteUrl: string | null; onMeChanged: () => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(true);
 
@@ -28,6 +28,7 @@ export function SettingsPage(props: { me: Me; botUsername: string; onMeChanged: 
 
   return (
     <section>
+      {props.siteUrl && <SiteLink url={props.siteUrl} />}
       <h1>Настройки</h1>
       <Field label="Реквизиты для оплаты" hint="Клиент увидит их, когда вы подтвердите время заказа">
         <textarea rows={3} value={settings.payment_details} placeholder="Сбер, +7 900 000-00-00, Анна К." onInput={(e) => set({ payment_details: e.currentTarget.value })} />
@@ -75,6 +76,42 @@ export function SettingsPage(props: { me: Me; botUsername: string; onMeChanged: 
       <Broadcasts botUsername={props.botUsername} />
       <Admins me={props.me} onMeChanged={props.onMeChanged} />
     </section>
+  );
+}
+
+function SiteLink(props: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  const share = `Наше меню, заказать можно прямо на сайте 👇\n${props.url}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(props.url);
+    } catch {
+      window.prompt("Скопируйте ссылку", props.url);
+      return;
+    }
+    setCopied(true);
+    haptic();
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <>
+      <h1>Ссылка на меню</h1>
+      <p class="muted small">
+        Отправьте её в WhatsApp или куда угодно: по ней видно меню и можно сразу заказать, Telegram не нужен. Заказы с сайта
+        приходят сюда же, с телефоном клиента.
+      </p>
+      <div class="card compact">
+        <code class="small">{props.url}</code>
+      </div>
+      <div class="row gap">
+        <button onClick={copy}>{copied ? "✅ Скопировано" : "📋 Скопировать"}</button>
+        <button class="primary" onClick={() => openLink(`https://wa.me/?text=${encodeURIComponent(share)}`)}>
+          📲 В WhatsApp
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -168,7 +205,7 @@ function AddAdminSheet(props: { onClose: () => void; onAdded: () => void }) {
       <p class="muted small">Человек должен хотя бы раз нажать /start в боте — тогда он появится в этом списке.</p>
       <Toggle label="Владелец (может управлять админами)" checked={role === "owner"} onChange={(v) => setRole(v ? "owner" : "helper")} />
       <input class="search" type="search" placeholder="Имя или @username" value={query} onInput={(e) => setQuery(e.currentTarget.value)} />
-      {clients.slice(0, 30).map((c) => (
+      {clients.filter((c) => c.id > 0).slice(0, 30).map((c) => (
         <button class="card list-row" onClick={() => add(c)}>
           <span>
             <b>{personName(c)}</b> {c.username && <span class="muted">@{c.username}</span>}

@@ -47,6 +47,11 @@ export function personName(p: { first_name: string | null; last_name: string | n
   return name || (p.username ? `@${p.username}` : "Без имени");
 }
 
+export function formatPhone(digits: string): string {
+  const m = digits.match(/^7(\d{3})(\d{3})(\d{2})(\d{2})$/);
+  return m ? `+7 ${m[1]} ${m[2]}-${m[3]}-${m[4]}` : `+${digits}`;
+}
+
 export function itemLabel(i: { dish_title: string; variant_title: string }): string {
   return i.variant_title ? `${i.dish_title} (${i.variant_title})` : i.dish_title;
 }

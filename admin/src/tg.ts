@@ -6,6 +6,7 @@ interface TelegramWebApp {
   showAlert(message: string, callback?: () => void): void;
   showConfirm(message: string, callback: (ok: boolean) => void): void;
   openTelegramLink(url: string): void;
+  openLink(url: string): void;
   close(): void;
   HapticFeedback?: { notificationOccurred(type: "error" | "success" | "warning"): void };
   disableVerticalSwipes?: () => void;
@@ -33,6 +34,15 @@ export function alert(message: string) {
 
 export function haptic(type: "error" | "success" | "warning" = "success") {
   tg?.HapticFeedback?.notificationOccurred(type);
+}
+
+export function openLink(url: string) {
+  if (tg?.initData) tg.openLink(url);
+  else window.open(url, "_blank");
+}
+
+export function openWhatsApp(phone: string) {
+  openLink(`https://wa.me/${phone}`);
 }
 
 export function openChat(username: string | null) {

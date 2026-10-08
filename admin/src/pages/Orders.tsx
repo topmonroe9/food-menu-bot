@@ -1,8 +1,8 @@
 import { useEffect, useState } from "preact/hooks";
 import { api } from "../api";
-import { confirm, haptic, openChat } from "../tg";
+import { confirm, haptic, openChat, openWhatsApp } from "../tg";
 import { STATUS_LABEL, type Order, type Slot } from "../types";
-import { itemLabel, money, personName, shortDateTime, shortDay, today } from "../format";
+import { formatPhone, itemLabel, money, personName, shortDateTime, shortDay, today } from "../format";
 import { Chips, Empty, Field, Sheet } from "../ui";
 
 type Filter = "active" | "attention" | "done" | "cancelled" | "all";
@@ -82,6 +82,7 @@ function OrderCard(props: {
       </header>
       <button class="link" onClick={props.onOpenClient}>
         👤 {personName(o)} {o.username && <span class="muted">@{o.username}</span>}
+        {o.phone && <span class="muted"> · {formatPhone(o.phone)} · 🌐 с сайта</span>}
       </button>
       <ul class="items">
         {o.items.map((i) => (
@@ -132,6 +133,7 @@ function OrderCard(props: {
           <button onClick={props.onSchedule}>🕐 Перенести</button>
         )}
         {o.username && <button onClick={() => openChat(o.username)}>💬 Написать</button>}
+        {o.phone && <button onClick={() => openWhatsApp(o.phone!)}>💬 WhatsApp</button>}
         {o.status !== "done" && o.status !== "cancelled" && (
           <button class="danger" onClick={() => props.onAction("cancel", `Отменить заказ #${o.id}? Клиент получит уведомление.`)}>
             Отменить

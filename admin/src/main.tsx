@@ -22,6 +22,7 @@ const TABS: [Tab, string, string][] = [
 function App() {
   const [me, setMe] = useState<Me | null>(null);
   const [botUsername, setBotUsername] = useState("");
+  const [siteUrl, setSiteUrl] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem("tab") as Tab) || "orders");
@@ -29,10 +30,11 @@ function App() {
 
   const loadBootstrap = () =>
     api
-      .get<{ me: Me; counts: Record<string, number>; botUsername: string }>("/bootstrap")
+      .get<{ me: Me; counts: Record<string, number>; botUsername: string; siteUrl: string | null }>("/bootstrap")
       .then((data) => {
         setMe(data.me);
         setBotUsername(data.botUsername);
+        setSiteUrl(data.siteUrl);
         setCounts(data.counts);
       })
       .catch((e: Error) => setError(e.message));
@@ -65,7 +67,7 @@ function App() {
         {tab === "clients" && <ClientsPage openId={clientId} onOpen={setClientId} />}
         {tab === "menu" && <MenuPage />}
         {tab === "slots" && <SlotsPage />}
-        {tab === "settings" && <SettingsPage me={me} botUsername={botUsername} onMeChanged={loadBootstrap} />}
+        {tab === "settings" && <SettingsPage me={me} botUsername={botUsername} siteUrl={siteUrl} onMeChanged={loadBootstrap} />}
       </main>
       <nav class="tabbar">
         {TABS.map(([key, icon, label]) => (

@@ -33,6 +33,7 @@ export interface Order {
   first_name: string;
   last_name: string | null;
   username: string | null;
+  phone: string | null;
   items: OrderItem[];
 }
 
@@ -41,6 +42,7 @@ export interface Client {
   first_name: string;
   last_name: string | null;
   username: string | null;
+  phone: string | null;
   last_activity_at: string;
   created_at: string;
   orders_count: number;

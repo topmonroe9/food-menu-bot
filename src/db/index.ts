@@ -140,6 +140,20 @@ const migrations: string[] = [
   `
   ALTER TABLE categories ADD COLUMN button_style TEXT NOT NULL DEFAULT '';
   `,
+  `
+  ALTER TABLE users ADD COLUMN phone TEXT;
+  CREATE INDEX users_phone ON users(phone);
+
+  ALTER TABLE orders ADD COLUMN web_session TEXT;
+  CREATE INDEX orders_web_session ON orders(web_session);
+
+  CREATE TABLE web_sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL
+  );
+  `,
 ];
 
 function migrate() {

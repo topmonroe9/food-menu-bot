@@ -1,6 +1,6 @@
 import { InlineKeyboard } from "grammy";
 import type { OrderFull } from "../../db/orders.js";
-import { chatLink } from "../../db/users.js";
+import { chatLink, isWebUser } from "../../db/users.js";
 import { addDays, shortDay, timeSteps, today } from "../../lib/time.js";
 import { listSlots } from "../../db/slots.js";
 
@@ -30,7 +30,8 @@ export function orderCardKeyboard(order: OrderFull): InlineKeyboard {
       kb.text("✔️ Выдан", `a:done:${id}`).row();
       break;
   }
-  kb.url("💬 Написать клиенту", chatLink({ id: order.user_id, username: order.username }));
+  const link = chatLink({ id: order.user_id, username: order.username, phone: order.phone });
+  if (link) kb.url(isWebUser(order.user_id) ? "💬 WhatsApp" : "💬 Написать клиенту", link);
   if (order.status !== "done" && order.status !== "cancelled") kb.text("✖️ Отменить", `a:cx:${id}`);
   return kb;
 }

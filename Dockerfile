@@ -5,6 +5,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY scripts ./scripts
 COPY admin ./admin
+COPY site ./site
 COPY src ./src
 RUN npm run build
 

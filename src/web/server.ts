@@ -38,6 +38,8 @@ import {
 import { addDays, today } from "../lib/time.js";
 import { toButtonStyle } from "../lib/buttons.js";
 import { applyAdminUi } from "../bot/setup.js";
+import { siteUrl } from "../bot/ui.js";
+import { renderSitePage, shop } from "./shop.js";
 
 type Env = { Variables: { user: WebAppUser } };
 
@@ -63,7 +65,10 @@ app.onError((err, c) => {
   return c.json({ error: "Что-то пошло не так" }, 500);
 });
 
-app.get("/", (c) => c.text("ok"));
+app.get("/", (c) => c.html(renderSitePage()));
+app.get("/health", (c) => c.text("ok"));
+app.route("/shop", shop);
+app.use("/site/*", serveStatic({ root: publicDir }));
 app.use("/admin/*", serveStatic({ root: publicDir }));
 app.use("/media/*", serveStatic({ root: config.dataDir }));
 
@@ -88,6 +93,7 @@ app.get("/api/bootstrap", (c) => {
     me: { id: user.id, name: user.first_name, owner: isOwner(user.id), notify: admin ? !!admin.notify : false },
     counts: ordersCountByStatus(),
     botUsername: bot.botInfo.username,
+    siteUrl: siteUrl(),
   });
 });
 
@@ -305,7 +311,7 @@ app.get("/api/admins", (c) => c.json({ admins: listAdmins(), envOwners: config.o
 app.post("/api/admins", async (c) => {
   requireOwner(c);
   const { userId, role } = await c.req.json<{ userId: number; role: AdminRole }>();
-  if (!getUser(Number(userId))) throw new BadRequest("Человек должен сначала написать боту /start");
+  if (!(Number(userId) > 0) || !getUser(Number(userId))) throw new BadRequest("Человек должен сначала написать боту /start");
   addAdmin(Number(userId), role === "owner" ? "owner" : "helper");
   await applyAdminUi(Number(userId));
   return c.json({ ok: true });

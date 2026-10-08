@@ -1,8 +1,8 @@
 import { useEffect, useState } from "preact/hooks";
 import { api } from "../api";
-import { openChat } from "../tg";
+import { openChat, openWhatsApp } from "../tg";
 import { STATUS_LABEL, type Client, type ClientStats, type Order } from "../types";
-import { itemLabel, money, personName, shortDateTime } from "../format";
+import { formatPhone, itemLabel, money, personName, shortDateTime } from "../format";
 import { Chips, Empty, Sheet } from "../ui";
 
 type Sort = "recent" | "revenue" | "orders";
@@ -32,7 +32,7 @@ export function ClientsPage(props: { openId: number | null; onOpen: (id: number 
   return (
     <section>
       <h1>Клиенты</h1>
-      <input class="search" type="search" placeholder="Поиск по имени или @username" value={query} onInput={(e) => setQuery(e.currentTarget.value)} />
+      <input class="search" type="search" placeholder="Имя, @username или телефон" value={query} onInput={(e) => setQuery(e.currentTarget.value)} />
       <Chips value={sort} options={SORTS} onChange={setSort} />
       {clients === null && <Empty>Загрузка…</Empty>}
       {clients?.length === 0 && <Empty>Никого не нашли</Empty>}
@@ -40,6 +40,7 @@ export function ClientsPage(props: { openId: number | null; onOpen: (id: number 
         <button class="card list-row" onClick={() => props.onOpen(c.id)}>
           <div>
             <b>{personName(c)}</b> {c.username && <span class="muted">@{c.username}</span>}
+            {c.phone && <span class="muted"> {formatPhone(c.phone)} 🌐</span>}
             <div class="muted small">
               {c.orders_count > 0 ? `${c.orders_count} заказ(ов) · ${money(c.total_spent)}` : "ещё не заказывал(а)"}
             </div>
@@ -120,11 +121,16 @@ function ClientSheet(props: { id: number; onClose: () => void }) {
       {data && (
         <>
           <p class="muted">
-            {data.user.username ? `@${data.user.username} · ` : ""}с нами с {shortDateTime(data.user.created_at.slice(0, 10))}
+            {data.user.username ? `@${data.user.username} · ` : ""}
+            {data.user.phone ? `${formatPhone(data.user.phone)} · заказывает с сайта · ` : ""}с нами с {shortDateTime(data.user.created_at.slice(0, 10))}
             <br />
             последняя активность: {shortDateTime(data.user.last_activity_at)}
           </p>
-          {data.user.username ? (
+          {data.user.phone ? (
+            <button class="wide" onClick={() => openWhatsApp(data.user.phone!)}>
+              💬 Написать в WhatsApp
+            </button>
+          ) : data.user.username ? (
             <button class="wide" onClick={() => openChat(data.user.username)}>
               💬 Написать в личку
             </button>

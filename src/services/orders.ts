@@ -1,6 +1,16 @@
 import { GrammyError, InlineKeyboard } from "grammy";
 import { bot } from "../bot/instance.js";
-import { getOrder, getOrderMessages, saveOrderMessage, updateOrder, createOrder, type OrderFull, type OrderStatus } from "../db/orders.js";
+import {
+  getOrder,
+  getOrderMessages,
+  saveOrderMessage,
+  updateOrder,
+  createOrder,
+  type NewOrder,
+  type OrderFull,
+  type OrderStatus,
+} from "../db/orders.js";
+import { isWebUser } from "../db/users.js";
 import { notifyRecipients } from "../db/admins.js";
 import { cookName, getSetting } from "../db/settings.js";
 import { clearCart, getCart } from "../db/cart.js";
@@ -65,7 +75,9 @@ export async function refreshAdminCards(orderId: number) {
   }
 }
 
+// site clients have no chat with the bot, they see every change on their order page
 async function tellClient(order: OrderFull, text: string, keyboard?: InlineKeyboard) {
+  if (isWebUser(order.user_id)) return;
   await safe(() =>
     bot.api.sendMessage(order.user_id, text, {
       parse_mode: "HTML",
@@ -87,20 +99,24 @@ export function paymentText(order: OrderFull): string {
 export const paidButton = (orderId: number) =>
   new InlineKeyboard().text("💳 Я оплатил", `c:paid:${orderId}`).row().text("Отменить заказ", `c:cx:${orderId}`);
 
+export async function placeOrder(input: NewOrder): Promise<OrderFull> {
+  if (input.lines.length === 0) throw new OrderFlowError("Корзина пуста");
+  const orderId = createOrder(input);
+  await sendAdminCards(orderId);
+  return load(orderId);
+}
+
 export async function submitOrder(userId: number, draft: CheckoutDraft): Promise<OrderFull> {
-  const lines = getCart(userId);
-  if (lines.length === 0) throw new OrderFlowError("Корзина пуста");
-  const orderId = createOrder({
+  const order = await placeOrder({
     userId,
-    lines,
+    lines: getCart(userId),
     slotId: draft.slotId ?? null,
     requestedAt: draft.requestedAt ?? null,
     requestedNote: draft.note ?? null,
     comment: draft.comment ?? null,
   });
   clearCart(userId);
-  await sendAdminCards(orderId);
-  return load(orderId);
+  return order;
 }
 
 export async function scheduleOrder(orderId: number, at: string) {

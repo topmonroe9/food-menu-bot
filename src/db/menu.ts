@@ -139,6 +139,18 @@ export function getVariant(id: number): (Variant & { dish_title: string; is_dele
     .get(id) as (Variant & { dish_title: string; is_deleted: number }) | undefined;
 }
 
+// a variant a client can actually order right now: not deleted, in stock, its dish and section shown
+export function orderableVariant(id: number): (Variant & { dish_title: string }) | undefined {
+  return db
+    .prepare(
+      `SELECT v.*, d.title AS dish_title FROM variants v
+       JOIN dishes d ON d.id = v.dish_id AND d.is_visible = 1
+       JOIN categories c ON c.id = d.category_id AND c.is_visible = 1
+       WHERE v.id = ? AND v.is_deleted = 0 AND v.is_available = 1`,
+    )
+    .get(id) as (Variant & { dish_title: string }) | undefined;
+}
+
 export interface DishInput {
   category_id: number;
   title: string;

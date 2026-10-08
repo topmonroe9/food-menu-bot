@@ -15,7 +15,7 @@ import {
   saveCardFor,
   scheduleOrder,
 } from "../../services/orders.js";
-import { adminUrl, answer, BTN_ADMIN } from "../ui.js";
+import { adminUrl, answer, BTN_ADMIN, siteUrl, whatsappShareUrl } from "../ui.js";
 import { cancelConfirmKeyboard, dayPickerKeyboard, expandDate, orderCardKeyboard, timePickerKeyboard } from "./keyboards.js";
 
 export const adminComposer = new Composer();
@@ -48,6 +48,21 @@ async function showPanel(ctx: Context) {
   kb.text("📋 Активные заказы", "a:list").text("📣 Рассылка", "a:broadcast");
   await ctx.reply(text, { parse_mode: "HTML", reply_markup: kb });
 }
+
+admin.command("link", async (ctx) => {
+  const url = siteUrl();
+  if (!url) {
+    await ctx.reply("Ссылки пока нет: в .env не заполнен WEBAPP_URL");
+    return;
+  }
+  await ctx.reply(
+    `Ссылка на меню, по ней можно сразу заказать — даже без Telegram:\n${url}\n\nЗаказы с сайта приходят сюда же, с телефоном клиента и кнопкой WhatsApp.`,
+    {
+      reply_markup: new InlineKeyboard().url("📲 Отправить в WhatsApp", whatsappShareUrl(url)),
+      link_preview_options: { is_disabled: true },
+    },
+  );
+});
 
 admin.command("admin", showPanel);
 admin.hears(BTN_ADMIN, showPanel);

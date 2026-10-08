@@ -3,7 +3,7 @@ import { db } from "../db/index.js";
 import { notifyRecipients } from "../db/admins.js";
 import { getOrder, listOrders, ordersScheduledOn, updateOrder, STATUS_LABEL } from "../db/orders.js";
 import { getSetting } from "../db/settings.js";
-import { displayName } from "../db/users.js";
+import { displayName, isWebUser } from "../db/users.js";
 import { escapeHtml, money } from "../lib/format.js";
 import { hoursBetween, longDay, nowLocal, today } from "../lib/time.js";
 import { paidButton, paymentText } from "./orders.js";
@@ -20,7 +20,7 @@ async function paymentReminders(now: string) {
   const hours = Number(getSetting("payment_reminder_hours")) || 0;
   if (hours <= 0) return;
   for (const order of listOrders("awaiting_payment", 200)) {
-    if (order.payment_reminded || hoursBetween(order.updated_at, now) < hours) continue;
+    if (isWebUser(order.user_id) || order.payment_reminded || hoursBetween(order.updated_at, now) < hours) continue;
     updateOrder(order.id, { payment_reminded: 1 });
     await send(order.user_id, `⏰ Напоминаю про оплату заказа #${order.id}.\n\n${paymentText(order)}`, {
       reply_markup: paidButton(order.id),
@@ -35,6 +35,7 @@ async function pickupReminders(now: string) {
   const address = getSetting("pickup_address").trim();
   for (const { id } of rows) {
     const order = getOrder(id)!;
+    if (isWebUser(order.user_id)) continue;
     const left = hoursBetween(now, order.scheduled_at!);
     if (left > 2 || left < -1) continue;
     updateOrder(id, { pickup_reminded: 1 });

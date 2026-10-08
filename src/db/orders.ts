@@ -28,6 +28,7 @@ export interface Order {
   total: number;
   payment_reminded: number;
   pickup_reminded: number;
+  web_session: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +48,7 @@ export interface OrderFull extends Order {
   first_name: string;
   last_name: string | null;
   username: string | null;
+  phone: string | null;
 }
 
 export interface NewOrder {
@@ -56,6 +58,7 @@ export interface NewOrder {
   requestedAt: string | null;
   requestedNote: string | null;
   comment: string | null;
+  webSession?: string;
 }
 
 export function createOrder(input: NewOrder): number {
@@ -65,10 +68,20 @@ export function createOrder(input: NewOrder): number {
     const orderId = Number(
       db
         .prepare(
-          `INSERT INTO orders (user_id, status, slot_id, requested_at, requested_note, comment, total, created_at, updated_at)
-           VALUES (?, 'new', ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO orders (user_id, status, slot_id, requested_at, requested_note, comment, total, web_session, created_at, updated_at)
+           VALUES (?, 'new', ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(input.userId, input.slotId, input.requestedAt, input.requestedNote, input.comment, total, now, now)
+        .run(
+          input.userId,
+          input.slotId,
+          input.requestedAt,
+          input.requestedNote,
+          input.comment,
+          total,
+          input.webSession ?? null,
+          now,
+          now,
+        )
         .lastInsertRowid,
     );
     const insertItem = db.prepare(
@@ -83,7 +96,7 @@ export function createOrder(input: NewOrder): number {
 }
 
 const selectFull = `
-  SELECT o.*, u.first_name, u.last_name, u.username
+  SELECT o.*, u.first_name, u.last_name, u.username, u.phone
   FROM orders o JOIN users u ON u.id = o.user_id`;
 
 function attachItems(orders: (Omit<OrderFull, "items">)[]): OrderFull[] {
@@ -132,6 +145,13 @@ export function listUserOrders(userId: number, limit = 10): OrderFull[] {
   const rows = db
     .prepare(`${selectFull} WHERE o.user_id = ? ORDER BY o.id DESC LIMIT ?`)
     .all(userId, limit) as Omit<OrderFull, "items">[];
+  return attachItems(rows);
+}
+
+export function listSessionOrders(token: string, limit = 10): OrderFull[] {
+  const rows = db
+    .prepare(`${selectFull} WHERE o.web_session = ? ORDER BY o.id DESC LIMIT ?`)
+    .all(token, limit) as Omit<OrderFull, "items">[];
   return attachItems(rows);
 }
 

@@ -2,7 +2,8 @@ import { escapeHtml, money } from "../lib/format.js";
 import { humanDateTime } from "../lib/time.js";
 import { getSlot } from "../db/slots.js";
 import { STATUS_LABEL, type OrderFull } from "../db/orders.js";
-import { displayName } from "../db/users.js";
+import { chatLink, displayName, isWebUser } from "../db/users.js";
+import { formatPhone } from "../lib/phone.js";
 
 function itemsBlock(order: OrderFull): string {
   return order.items
@@ -22,12 +23,20 @@ export function requestedText(order: OrderFull): string {
   return order.requested_note ? `«${escapeHtml(order.requested_note)}»` : "не указано";
 }
 
-export function adminOrderText(order: OrderFull): string {
+function clientLine(order: OrderFull): string {
   const client = escapeHtml(displayName(order));
+  if (isWebUser(order.user_id)) {
+    const phone = order.phone ? ` · <a href="${chatLink({ id: order.user_id, username: null, phone: order.phone })}">${formatPhone(order.phone)}</a>` : "";
+    return `👤 ${client}${phone} · 🌐 с сайта`;
+  }
   const username = order.username ? ` @${escapeHtml(order.username)}` : "";
+  return `👤 <a href="tg://user?id=${order.user_id}">${client}</a>${username}`;
+}
+
+export function adminOrderText(order: OrderFull): string {
   const lines = [
     `<b>Заказ #${order.id}</b> · ${STATUS_LABEL[order.status]}`,
-    `👤 <a href="tg://user?id=${order.user_id}">${client}</a>${username}`,
+    clientLine(order),
     "",
     itemsBlock(order),
     `<b>Итого: ${money(order.total)}</b>`,
